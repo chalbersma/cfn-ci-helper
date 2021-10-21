@@ -1,0 +1,4 @@
+boto3>=1.19.0
+pyyaml>=6.0
+texttable>=1.6.4
+jinja2>=3.0.2
