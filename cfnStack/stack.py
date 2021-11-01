@@ -33,6 +33,8 @@ class ProcessStack:
 
         self.lname = "{}/{}".format(self.stack_name, self.aws_profile)
 
+        self.extend_live_add()
+
         self.return_status = dict(stack=self.stack_name,
                                   profile=self.aws_profile,
                                   aws="Unknown", stack_valid="Unknown",
@@ -53,6 +55,21 @@ class ProcessStack:
             self.process_changeset()
 
         #self.clean_change_sets()
+
+    def extend_live_add(self):
+
+        for key, value in self.kwargs.get("live_add", {}).items():
+            if key == "parameters":
+                for k, v in value.items():
+                    this_param = {"ParameterKey": k,
+                                "ParameterValue": v}
+
+                    if "parameters" not in self.stack_cfg.keys():
+                        self.stack_cfg["parameters"] = list()
+
+                    self.logger.debug("{} Added Live Parameter {} to Stack".format(self.lname, k))
+                    self.stack_cfg["parameters"].append(this_param)
+
 
     def clean_change_sets(self):
 

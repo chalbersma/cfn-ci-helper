@@ -41,7 +41,7 @@ if __name__ == "__main__":
                         action="append")
     parser.add_argument("--tags", help="If using -S what tags specified as tag:value to use", default=[],
                         action="append")
-    parser.add_argument("--parameters", help="If using -S what parameters specified as param:value to use", default=[],
+    parser.add_argument("--parameters", help="Parameters specified as param:value to use.", default=[],
                         action="append")
     parser.add_argument("--profiles", help="If using -S what profiles this should be deployed to.", default=[],
                         action="append")
@@ -142,7 +142,12 @@ if __name__ == "__main__":
 
                     logger.debug("configs: {}".format(category_configs))
 
-    raise ValueError()
+    # Parse Live Add Options
+    live_add = dict(parameters={})
+
+    for param in args.parameters:
+        live_add["parameters"][param.split(":")[0]] = param.split(":")[1]
+
 
     wanted_stacks = list()
     if len(args.stackname) == 0:
@@ -190,7 +195,8 @@ if __name__ == "__main__":
             action_tuples.append({"stack": wstack,
                                   "stack_cfg": this_config,
                                   "profile": wprofile,
-                                  "stack_config_json": stack_config_json})
+                                  "stack_config_json": stack_config_json,
+                                  "live_add": live_add})
 
     logger.info("Requesting Install/Updates for {} Stacks/Profile Combinations".format(len(action_tuples)))
     # logger.debug("Requested Stack/Profile Combinations.\n{}".format(json.dumps(action_tuples, indent=2)))
