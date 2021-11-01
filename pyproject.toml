@@ -1,6 +1,6 @@
 [build-system]
 requires = [
   "twine",
-  "setuptools"
+  "setuptools",
 ]
 build-backend = "setuptools.build_meta"

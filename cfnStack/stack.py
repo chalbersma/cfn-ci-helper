@@ -62,7 +62,7 @@ class ProcessStack:
             if key == "parameters":
                 for k, v in value.items():
                     this_param = {"ParameterKey": k,
-                                "ParameterValue": v}
+                                  "ParameterValue": v}
 
                     if "parameters" not in self.stack_cfg.keys():
                         self.stack_cfg["parameters"] = list()
