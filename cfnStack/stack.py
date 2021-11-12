@@ -61,7 +61,7 @@ class ProcessStack:
         live_add = self.kwargs.get("live_add", {})
         self.logger.debug("Live Add Definitions: {}".format(live_add))
 
-        for key, value in live_add:
+        for key, value in live_add.items():
             if key == "parameters":
                 for k, v in value.items():
                     this_param = {"ParameterKey": k,
@@ -72,8 +72,6 @@ class ProcessStack:
 
                     self.logger.debug("{} Added Live Parameter {} to Stack".format(self.lname, k))
                     self.stack_cfg["parameters"].append(this_param)
-
-
 
     def clean_change_sets(self):
 
@@ -280,8 +278,6 @@ class ProcessStack:
                         }
 
         self.logger.debug("{} general_args: {}".format(self.lname, general_args))
-
-        raise ValueError()
 
         changeset_name = datetime.datetime.today().strftime("{}-{}-%Y-%m-%d-%s".format(self.stack_name, self.aws_profile))
 
