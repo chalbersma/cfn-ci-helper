@@ -146,7 +146,10 @@ if __name__ == "__main__":
     live_add = dict(parameters={})
 
     for param in args.parameters:
-        live_add["parameters"][param.split(":")[0]] = param.split(":")[1]
+
+        param_key, param_val = param.split(":")
+        logger.debug("Adding Parameter {}".format(param_key))
+        live_add["parameters"][param_key] = param_val
 
 
     wanted_stacks = list()

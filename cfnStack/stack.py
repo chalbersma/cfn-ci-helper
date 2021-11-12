@@ -58,7 +58,10 @@ class ProcessStack:
 
     def extend_live_add(self):
 
-        for key, value in self.kwargs.get("live_add", {}).items():
+        live_add = self.kwargs.get("live_add", {})
+        self.logger.debug("Live Add Definitions: {}".format(live_add))
+
+        for key, value in live_add:
             if key == "parameters":
                 for k, v in value.items():
                     this_param = {"ParameterKey": k,
