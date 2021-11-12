@@ -71,6 +71,7 @@ class ProcessStack:
                     self.stack_cfg["parameters"].append(this_param)
 
 
+
     def clean_change_sets(self):
 
         """
@@ -274,6 +275,10 @@ class ProcessStack:
                         "Tags": self.stack_cfg.get("tags", list()),
                         "Description": self.stack_cfg.get("description", "No Description Given")
                         }
+
+        self.logger.debug("{} general_args: {}".format(self.lname, general_args))
+
+        raise ValueError()
 
         changeset_name = datetime.datetime.today().strftime("{}-{}-%Y-%m-%d-%s".format(self.stack_name, self.aws_profile))
 
