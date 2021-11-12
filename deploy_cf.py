@@ -198,8 +198,7 @@ if __name__ == "__main__":
             action_tuples.append({"stack": wstack,
                                   "stack_cfg": this_config,
                                   "profile": wprofile,
-                                  "stack_config_json": stack_config_json,
-                                  "live_add": live_add})
+                                  "stack_config_json": stack_config_json})
 
     logger.info("Requesting Install/Updates for {} Stacks/Profile Combinations".format(len(action_tuples)))
     # logger.debug("Requested Stack/Profile Combinations.\n{}".format(json.dumps(action_tuples, indent=2)))
@@ -210,7 +209,9 @@ if __name__ == "__main__":
     should_break = False
 
     for action_tuple in action_tuples:
-        this_result = cfnStack.ProcessStack(action_tuple, confirm=args.confirm)
+        this_result = cfnStack.ProcessStack(action_tuple,
+                                            confirm=args.confirm,
+                                            live_add=live_add)
 
         if this_result.return_status["fail"] is True:
             should_break = True
