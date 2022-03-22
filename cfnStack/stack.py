@@ -22,6 +22,7 @@ class ProcessStack:
         self.stack_name = stack_config["stack"]
         self.stack_cfg = stack_config["stack_cfg"]
         self.stack_config_json = stack_config["stack_config_json"]
+        self.region = stack_config.get("region", region)
         self.aws_profile = stack_config.get("profile", "default")
         if self.aws_profile == "default":
             # To use the default profile set to None
@@ -29,7 +30,6 @@ class ProcessStack:
 
         self.confirm = confirm
         self.timeout = timeout
-        self.region = region
 
         self.lname = "{}/{}".format(self.stack_name, self.aws_profile)
 
@@ -59,7 +59,6 @@ class ProcessStack:
     def extend_live_add(self):
 
         live_add = self.kwargs.get("live_add", {})
-        self.logger.debug("Live Add Definitions: {}".format(live_add))
 
         for key, value in live_add.items():
             if key == "parameters":
@@ -115,6 +114,7 @@ class ProcessStack:
 
         table_row = [self.return_status["stack"],
                      self.return_status["profile"],
+                     self.region,
                      self.return_status["aws"],
                      self.return_status["stack_valid"],
                      self.return_status["changes"],

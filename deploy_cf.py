@@ -194,17 +194,21 @@ if __name__ == "__main__":
                                                                             mprofiles)))
                 sys.exit(3)
 
+        wregions = stack_config_json.get("regions", [_region])
+
         for wprofile in wprofiles:
-            action_tuples.append({"stack": wstack,
-                                  "stack_cfg": this_config,
-                                  "profile": wprofile,
-                                  "stack_config_json": stack_config_json})
+            for wregion in wregions:
+                action_tuples.append({"stack": wstack,
+                                      "stack_cfg": this_config,
+                                      "region": wregion,
+                                      "profile": wprofile,
+                                      "stack_config_json": stack_config_json})
 
     logger.info("Requesting Install/Updates for {} Stacks/Profile Combinations".format(len(action_tuples)))
     # logger.debug("Requested Stack/Profile Combinations.\n{}".format(json.dumps(action_tuples, indent=2)))
 
     result_table = texttable.Texttable(max_width=160)
-    result_table.add_row(["stack", "profile", "aws", "stack_valid", "changes", "action", "f_triggered"])
+    result_table.add_row(["stack", "profile", "region", "aws", "stack_valid", "changes", "action", "f_triggered"])
 
     should_break = False
 
