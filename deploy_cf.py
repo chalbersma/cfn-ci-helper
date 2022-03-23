@@ -199,8 +199,8 @@ if __name__ == "__main__":
 
         wregions = this_config.get("regions", [_region])
 
-        if isinstance(wregions, str) and wregions == "all":
-            wregions = ["all"]
+        if isinstance(wregions, str) and wregions.startswith("all"):
+            wregions = [wregions]
 
         for wprofile in wprofiles:
 
@@ -216,6 +216,8 @@ if __name__ == "__main__":
                 logger.warning("Deployment requested to all regions for service: {}".format(fast_service_name))
                 fast_session = aws_session = boto3.session.Session(profile_name=wprofile)
                 this_wregions = fast_session.get_available_regions(service_name=fast_service_name)
+                logger.info("Expanding to {} regions for profile {}".format(len(this_wregions), wprofile))
+                logger.debug("Wanted Regions for Profile {}, {}".format(wprofile, ", ".join(this_wregions)))
             # else
                 # I can use the list of regions
 
