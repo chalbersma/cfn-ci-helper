@@ -31,7 +31,10 @@ class ProcessStack:
         self.confirm = confirm
         self.timeout = timeout
 
-        self.lname = "{}/{}".format(self.stack_name, self.aws_profile)
+        region_text = str()
+        if self.region != self._region:
+            region_text = "[{}]".format(self.region)
+        self.lname = "{}/{}{}".format(self.stack_name, self.aws_profile, region_text)
 
         self.extend_live_add()
 

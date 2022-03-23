@@ -9,10 +9,12 @@ import argparse
 import sys
 import os.path
 import importlib.resources
+import json
 
 import yaml
 import texttable
 import jinja2
+
 
 import cfnStack
 
@@ -178,6 +180,7 @@ if __name__ == "__main__":
 
         with open(this_config_file, "r") as stack_config_file_obj:
             stack_config_json = stack_config_file_obj.read()
+            stack_config_parsed = json.loads(stack_config_json)
 
         if len(args.only_profiles) == 0:
             # Take all Configured Profiles
@@ -194,7 +197,7 @@ if __name__ == "__main__":
                                                                             mprofiles)))
                 sys.exit(3)
 
-        wregions = stack_config_json.get("regions", [_region])
+        wregions = stack_config_parsed.get("regions", [_region])
 
         for wprofile in wprofiles:
             for wregion in wregions:
