@@ -11,6 +11,7 @@ import os.path
 import importlib.resources
 import json
 
+import boto3
 import yaml
 import texttable
 import jinja2
@@ -198,8 +199,22 @@ if __name__ == "__main__":
 
         wregions = this_config.get("regions", [_region])
 
+        if isinstance(wregions, str) and wregions == "all":
+            wregions = ["all"]
+
         for wprofile in wprofiles:
-            for wregion in wregions:
+
+            this_wregions = wregions
+
+            if len(wregions) == 1 and wregions[0] == "all":
+                # Get and Wrap All Regions
+                logger.warning("Deployment requested to all regions")
+                fast_session = aws_session = boto3.session.Session(profile_name=wproile)
+                this_wregions = fast_session.get_available_regions(service_name="cloudformation")
+            # else
+                # I can use the list of regions
+
+            for wregion in this_wregions:
                 action_tuples.append({"stack": wstack,
                                       "stack_cfg": this_config,
                                       "region": wregion,
