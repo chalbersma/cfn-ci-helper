@@ -211,7 +211,7 @@ if __name__ == "__main__":
                 fast_service_name="cloudformation"
 
                 if ":" in wregions[0]:
-                    fast_service_name = wregions[0].split(1)
+                    fast_service_name = wregions[0].split(":")[1]
 
                 logger.warning("Deployment requested to all regions for service: {}".format(fast_service_name))
                 fast_session = aws_session = boto3.session.Session(profile_name=wprofile)
