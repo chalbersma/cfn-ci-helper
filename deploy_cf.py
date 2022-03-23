@@ -206,7 +206,7 @@ if __name__ == "__main__":
 
             this_wregions = wregions
 
-            if len(wregions) == 1 and wregions[0].startwith("all"):
+            if len(wregions) == 1 and wregions[0].startswith("all"):
                 # Get and Wrap All Regions
                 fast_service_name="cloudformation"
 
