@@ -206,11 +206,16 @@ if __name__ == "__main__":
 
             this_wregions = wregions
 
-            if len(wregions) == 1 and wregions[0] == "all":
+            if len(wregions) == 1 and wregions[0].startwith("all"):
                 # Get and Wrap All Regions
-                logger.warning("Deployment requested to all regions")
+                fast_service_name="cloudformation"
+
+                if ":" in wregions[0]:
+                    fast_service_name = wregions[0].split(1)
+
+                logger.warning("Deployment requested to all regions for service: {}".format(fast_service_name))
                 fast_session = aws_session = boto3.session.Session(profile_name=wprofile)
-                this_wregions = fast_session.get_available_regions(service_name="cloudformation")
+                this_wregions = fast_session.get_available_regions(service_name=fast_service_name)
             # else
                 # I can use the list of regions
 
