@@ -209,7 +209,7 @@ if __name__ == "__main__":
             if len(wregions) == 1 and wregions[0] == "all":
                 # Get and Wrap All Regions
                 logger.warning("Deployment requested to all regions")
-                fast_session = aws_session = boto3.session.Session(profile_name=wproile)
+                fast_session = aws_session = boto3.session.Session(profile_name=wprofile)
                 this_wregions = fast_session.get_available_regions(service_name="cloudformation")
             # else
                 # I can use the list of regions
