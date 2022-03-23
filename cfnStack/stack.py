@@ -5,6 +5,7 @@ import time
 import datetime
 
 import boto3
+from botocore.exceptions import ClientError
 
 class ProcessStack:
 
@@ -135,6 +136,8 @@ class ProcessStack:
 
         self.logger.info("{} : Connecting to CloudFormation".format(self.lname))
 
+        # Validate OKAY Region
+
         try:
             aws_session = boto3.session.Session(profile_name=self.aws_profile, region_name=self.region)
             cf_client = aws_session.client("cloudformation")
@@ -147,6 +150,16 @@ class ProcessStack:
             cf_client = None
         else:
             self.return_status["aws"] = self.aws_profile
+
+            try:
+                regional_sts = aws_session.client("sts")
+                regional_sts.get_caller_identity()
+            except ClientError as region_error:
+                self.logger.warning("Region {} Unavailable At this Time.".format(self.region))
+                self.go = False
+                self.return_status["aws"] = "Region Unavailable"
+                self.return_status["fail"] = False
+                self.return_status["action"] = "Region Ignore"
 
         return cf_client
 
