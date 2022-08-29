@@ -150,7 +150,7 @@ if __name__ == "__main__":
 
     for param in args.parameters:
 
-        param_key, param_val = param.split(":")
+        param_key, param_val = param.split(":", 1)
         logger.debug("Adding Parameter {}".format(param_key))
         live_add["parameters"][param_key] = param_val
 
