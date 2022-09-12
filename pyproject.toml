@@ -4,3 +4,8 @@ requires = [
   "setuptools",
 ]
 build-backend = "setuptools.build_meta"
+[project]
+dependencies = [
+  'texttable',
+  'jinja2'
+]
