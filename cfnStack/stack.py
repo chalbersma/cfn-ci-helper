@@ -333,8 +333,10 @@ class ProcessStack:
         else:
             # Delete Reequested
             pending_change = 1
+            self.return_status["changes"] = "1 Delete"
             if cstype == "DELETED":
                 pending_change = 0
+                self.return_status["changes"] = "None (Del)"
 
 
         if self.confirm is True and pending_change > 0 and self.delete is False:
@@ -372,12 +374,19 @@ class ProcessStack:
 
                 time.sleep(5)
 
-        elif self.confirm is True and pending_change > 0 and self.delete is True:
+        elif pending_change > 0 and self.delete is True:
 
             if self.confirm is True:
                 self.logger.info("{} : Attempting Delete".format(self.lname))
 
-                self.cf_client.delete_stack(StackName=general_args["StackName"])
+                try:
+                    self.cf_client.delete_stack(StackName=general_args["StackName"])
+                except Exception as delete_error:
+                    self.logger.error("Unable to Delete Stack with Error : {}".format(delete_error))
+                    self.return_status["action"] = "Delete Failure"
+
+                else:
+                    self.return_status["action"] = "Deleted"
 
             else:
                 self.logger.info("{} : Would have attempted a Delete, but Confirm not On".format(self.lname))
