@@ -25,6 +25,7 @@ class ProcessStack:
         self.stack_config_json = stack_config["stack_config_json"]
         self.region = stack_config.get("region", region)
         self.aws_profile = stack_config.get("profile", "default")
+        self.delete = stack_config.get("delete", False)
         if self.aws_profile == "default":
             # To use the default profile set to None
             self.aws_profile = None
@@ -228,12 +229,17 @@ class ProcessStack:
             cstype = "UPDATE"
         except Exception:
             self.logger.info("{} not does not yet exit, requesting create.".format(self.lname))
+            if self.delete is True:
+                cstype = "DELETED"
             cstype = "CREATE"
         else:
             if this_stack_info["Stacks"][0]["StackStatus"] == "REVIEW_IN_PROGRESS":
                 cstype = "CREATE"
+        finally:
+            if self.delete is True and cstype in ("UPDATE", "CREATE"):
+                cstype = "DELETE"
 
-            self.logger.info("{} exists, requesting update.".format(self.lname))
+            self.logger.info("{} exists, requesting {}.".format(self.lname, cstype))
 
         return cstype
 
@@ -299,30 +305,39 @@ class ProcessStack:
 
         self.logger.info("{} Creating Changeset {}".format(self.lname, changeset_name))
 
-        changeset_ident = self.cf_client.create_change_set(ChangeSetName=changeset_name,
-                                                           ChangeSetType=cstype,
-                                                           **general_args)
+        if self.delete is False:
+            # Make Changeset to Calculate Changes
 
-        # Wait until Available
-        cs_complete = self.wait_for_complete(changeset_ident["Id"])
-        if cs_complete != "yes":
-            self.logger.error("Unable to create a changeset {}".format(cs_complete))
-            self.return_status["changes"] = "Error Creating ChangeSet"
-            self.return_status["fail"] = True
-            self.go = False
-            return
+            changeset_ident = self.cf_client.create_change_set(ChangeSetName=changeset_name,
+                                                               ChangeSetType=cstype,
+                                                               **general_args)
 
-        changeset_info = self.cf_client.describe_change_set(ChangeSetName=changeset_ident["Id"])
+            # Wait until Available
+            cs_complete = self.wait_for_complete(changeset_ident["Id"])
+            if cs_complete != "yes":
+                self.logger.error("Unable to create a changeset {}".format(cs_complete))
+                self.return_status["changes"] = "Error Creating ChangeSet"
+                self.return_status["fail"] = True
+                self.go = False
+                return
 
-        pending_change = len(changeset_info["Changes"])
-        if cstype == "CREATE":
-            pending_change += 1
+            changeset_info = self.cf_client.describe_change_set(ChangeSetName=changeset_ident["Id"])
 
-        self.logger.debug("{} changes are outstanding.".format(pending_change))
+            pending_change = len(changeset_info["Changes"])
+            if cstype == "CREATE":
+                pending_change += 1
 
-        self.return_status["changes"] = "{} Changes".format(pending_change)
+            self.logger.debug("{} changes are outstanding.".format(pending_change))
 
-        if self.confirm is True and pending_change > 0:
+            self.return_status["changes"] = "{} Changes".format(pending_change)
+        else:
+            # Delete Reequested
+            pending_change = 1
+            if cstype == "DELETED":
+                pending_change = 0
+
+
+        if self.confirm is True and pending_change > 0 and self.delete is False:
             # Do Change
 
             cs_complete = self.wait_for_complete(changeset_ident["Id"])
@@ -356,6 +371,17 @@ class ProcessStack:
                     break
 
                 time.sleep(5)
+
+        elif self.confirm is True and pending_change > 0 and self.delete is True:
+
+            if self.confirm is True:
+                self.logger.info("{} : Attempting Delete".format(self.lname))
+
+                self.cf_client.delete_stack(StackName=general_args["StackName"])
+
+            else:
+                self.logger.info("{} : Would have attempted a Delete, but Confirm not On".format(self.lname))
+                self.return_status["action"] = "CONFIRM OFF (DEL)"
 
         elif pending_change > 0 and self.confirm is False:
             self.logger.info("{} : Stack Has {} changes but Confirm not on.".format(self.lname, pending_change))

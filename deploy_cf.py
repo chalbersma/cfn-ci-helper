@@ -49,6 +49,8 @@ if __name__ == "__main__":
     parser.add_argument("--profiles", help="If using -S what profiles this should be deployed to.", default=[],
                         action="append")
 
+    parser.add_argument("-D", "--stackdelete", help="Delete the Specified (Stacks)", default=False, action="store_true")
+
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("-d", "--category", help="Which Cateogry to Choose from (directory)", default=None)
     group.add_argument("-c", "--config", help="Specify a Configuration File to Deploy", default=None)
@@ -226,9 +228,10 @@ if __name__ == "__main__":
                                       "stack_cfg": this_config,
                                       "region": wregion,
                                       "profile": wprofile,
-                                      "stack_config_json": stack_config_json})
+                                      "stack_config_json": stack_config_json,
+                                      "delete": args.stackdelete})
 
-    logger.info("Requesting Install/Updates for {} Stacks/Profile Combinations".format(len(action_tuples)))
+    logger.info("Requesting Modifications for {} Stacks/Profile Combinations".format(len(action_tuples)))
     # logger.debug("Requested Stack/Profile Combinations.\n{}".format(json.dumps(action_tuples, indent=2)))
 
     result_table = texttable.Texttable(max_width=160)
