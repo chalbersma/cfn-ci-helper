@@ -45,7 +45,7 @@ class ProcessStack:
 
             dynamic_okay = True
             # Expand Stack Name With Parameterized Data
-            template_objs = {**self.kwargs.get("live_add", {}),
+            template_objs = {**self.kwargs.get("live_add", {}).get("parameters", {}),
                              **{x["ParameterKey"]: x["ParameterValue"] for x in
                                 self.stack_cfg.get("parameters", list())},
                              **{x["Key"]: x["Value"] for x in self.stack_cfg.get("tags", list())}
