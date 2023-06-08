@@ -41,7 +41,7 @@ class ProcessStack:
                                   aws="Unknown", stack_valid="Unknown",
                                   changes="Unknown", action="Nothing", fail=False)
 
-        if self.stack_cfg.get("dynamic_name", False) is True:
+        if self.stack_cfg.get("dynamic_name", False) is not False and isinstance(self.stack_cfg.get("dynamic_name", False), str):
 
             dynamic_okay = True
             # Expand Stack Name With Parameterized Data
@@ -51,13 +51,13 @@ class ProcessStack:
                              **{x["Key"]: x["Value"] for x in self.stack_cfg.get("tags", list())}
                              }
 
-            template = string.Template(self.stack_name)
+            template = string.Template(self.stack_cfg["dynamic_name"])
 
             try:
                 self.stack_name = template.substitute(mappings=template_objs)
             except Exception as TemplateError:
-                self.logger.error("Error doing Dynamic Name Substitution : {}")
-                self.logger.info("Template : {}".format(stack_config["stack"]))
+                self.logger.error("Error doing Dynamic Name Substitution : {}".format(TemplateError))
+                self.logger.info("Template : {}".format(self.stack_cfg["dynamic_name"]))
                 self.logger.debug("Available Replacements : {}".format(template_objs))
 
                 self.go = False
@@ -66,10 +66,11 @@ class ProcessStack:
                 self.return_status["fail"] = True
 
             else:
-                self.logger.info("Dynamic Name Went from : {} to {}".format(stack_config["stack"], self.stack_name))
+                self.logger.info("Dynamic Name Went from : {} to {}".format(self.stack_cfg["dynamic_name"], self.stack_name))
                 self.return_status["stack"] = self.stack_name
         else:
             # No Dynamic Name Used
+            self.logger.info("No Dynamic Name Used")
             dynamic_okay = True
 
         region_text = str()
