@@ -3,12 +3,13 @@
 import logging
 import time
 import datetime
+import string
 
 import boto3
 from botocore.exceptions import ClientError
 
-class ProcessStack:
 
+class ProcessStack:
     _timeout = 180
     _region = "us-west-2"
     _valid_capabilities = ["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"]
@@ -33,19 +34,50 @@ class ProcessStack:
         self.confirm = confirm
         self.timeout = timeout
 
-        region_text = str()
-        if self.region != self._region:
-            region_text = "[{}]".format(self.region)
-        self.lname = "{}/{}{}".format(self.stack_name, self.aws_profile, region_text)
-
-        self.extend_live_add()
+        self.go = True
 
         self.return_status = dict(stack=self.stack_name,
                                   profile=self.aws_profile,
                                   aws="Unknown", stack_valid="Unknown",
                                   changes="Unknown", action="Nothing", fail=False)
 
-        self.go = True
+        if self.stack_cfg.get("dynamic_name", False) is True:
+
+            dynamic_okay = True
+            # Expand Stack Name With Parameterized Data
+            template_objs = {**self.kwargs.get("live_add", {}),
+                             **{x["ParameterKey"]: x["ParameterValue"] for x in
+                                self.stack_cfg.get("parameters", list())},
+                             **{x["Key"]: x["Value"] for x in self.stack_cfg.get("tags", list())}
+                             }
+
+            template = string.Template(self.stack_name)
+
+            try:
+                self.stack_name = template.substitute(mappings=template_objs)
+            except Exception as TemplateError:
+                self.logger.error("Error doing Dynamic Name Substitution : {}")
+                self.logger.info("Template : {}".format(stack_config["stack"]))
+                self.logger.debug("Available Replacements : {}".format(template_objs))
+
+                self.go = False
+                dynamic_okay = False
+                self.return_status["stack_valid"] = "Dynamic Name Failure"
+                self.return_status["fail"] = True
+
+            else:
+                self.logger.info("Dynamic Name Went from : {} to {}".format(stack_config["stack"], self.stack_name))
+                self.return_status["stack"] = self.stack_name
+        else:
+            # No Dynamic Name Used
+            dynamic_okay = True
+
+        region_text = str()
+        if self.region != self._region:
+            region_text = "[{}]".format(self.region)
+        self.lname = "{}/{}{}".format(self.stack_name, self.aws_profile, region_text)
+
+        self.extend_live_add()
 
         if self.go:
             self.cf_client = self.get_client()
@@ -59,7 +91,7 @@ class ProcessStack:
         if self.go:
             self.process_changeset()
 
-        #self.clean_change_sets()
+        # self.clean_change_sets()
 
     def extend_live_add(self):
 
@@ -93,18 +125,22 @@ class ProcessStack:
 
             if outstanding_changesets > 0:
                 for this_changeset in changesets["Summaries"]:
-                    self.logger.info("{} Cleaning Changeset named : {}".format(self.lname, this_changeset["ChangeSetName"]))
+                    self.logger.info(
+                        "{} Cleaning Changeset named : {}".format(self.lname, this_changeset["ChangeSetName"]))
 
                     try:
                         self.cf_client.delete_change_set(ChangeSetName=this_changeset["ChangeSetId"])
                     except Exception as delete_error:
-                        self.logger.warning("{} Unable to Delete old Chnageset {}. Hanging Changeset".format(self.lname, this_changeset["ChangeSetName"]))
+                        self.logger.warning("{} Unable to Delete old Chnageset {}. Hanging Changeset".format(self.lname,
+                                                                                                             this_changeset[
+                                                                                                                 "ChangeSetName"]))
                         self.logger.debug("Error: {}".format(delete_error))
                         self.logger.warning("{} Continuing with Hanging Changeset, Clean Manually".format(self.lname))
                         self.go = False
                         self.return_status["fail"] = True
                     else:
-                        self.logger.info("{} Successfully Deleted Changeset {}".format(self.lname, this_changeset["ChangeSetName"]))
+                        self.logger.info(
+                            "{} Successfully Deleted Changeset {}".format(self.lname, this_changeset["ChangeSetName"]))
             else:
                 self.logger.info("{} No Oustanding Changests to Clean".format(self.lname))
         else:
@@ -143,7 +179,8 @@ class ProcessStack:
             aws_session = boto3.session.Session(profile_name=self.aws_profile, region_name=self.region)
             cf_client = aws_session.client("cloudformation")
         except Exception as error:
-            self.logger.error("Unable to Provision a Cloudformation Client in AWS Profile : {}".format(self.aws_profile))
+            self.logger.error(
+                "Unable to Provision a Cloudformation Client in AWS Profile : {}".format(self.aws_profile))
             self.logger.debug("Error on Session: {}".format(error))
             self.return_status["aws"] = "Error"
             self.go = False
@@ -183,8 +220,6 @@ class ProcessStack:
 
         return cap_okay
 
-
-
     def validate_stack(self):
 
         """
@@ -194,7 +229,6 @@ class ProcessStack:
 
         # Validate Stack
         self.logger.info("{} : Validating Stack Template".format(self.lname))
-
 
         try:
             self.cf_client.validate_template(TemplateBody=self.stack_config_json)
@@ -279,7 +313,6 @@ class ProcessStack:
 
         return complete
 
-
     def process_changeset(self):
 
         """
@@ -301,7 +334,8 @@ class ProcessStack:
 
         self.logger.debug("{} general_args: {}".format(self.lname, general_args))
 
-        changeset_name = datetime.datetime.today().strftime("{}-{}-%Y-%m-%d-%s".format(self.stack_name, self.aws_profile))
+        changeset_name = datetime.datetime.today().strftime(
+            "{}-{}-%Y-%m-%d-%s".format(self.stack_name, self.aws_profile))
 
         self.logger.info("{} Creating Changeset {}".format(self.lname, changeset_name))
 
@@ -338,7 +372,6 @@ class ProcessStack:
                 pending_change = 0
                 self.return_status["changes"] = "None (Del)"
 
-
         if self.confirm is True and pending_change > 0 and self.delete is False:
             # Do Change
 
@@ -353,7 +386,7 @@ class ProcessStack:
             self.logger.info("{} : Executing {} Changes".format(self.lname, pending_change))
             self.cf_client.execute_change_set(ChangeSetName=changeset_ident["Id"])
 
-            max_utime = int(time.time()) + (self.timeout *2)
+            max_utime = int(time.time()) + (self.timeout * 2)
 
             self.return_status["action"] = "Timed Out On Update"
 

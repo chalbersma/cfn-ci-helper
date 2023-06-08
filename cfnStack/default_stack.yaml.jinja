@@ -2,6 +2,7 @@
 default:
   file: {{ filename }}
   description: {{ description }}
+  dynamic_name: {{ dynamic_name|default("false", true) }}
   {% if capabilities|length > 0 %}
   capabilities:
     {% for capability in capabilities %}
