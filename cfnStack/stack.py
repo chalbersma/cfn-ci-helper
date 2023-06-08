@@ -57,7 +57,7 @@ class ProcessStack:
             template = string.Template(self.stack_cfg["dynamic_name"])
 
             try:
-                self.stack_name = template.substitute(mappings=template_objs)
+                self.stack_name = template.substitute(template_objs)
             except Exception as TemplateError:
                 self.logger.error("Error doing Dynamic Name Substitution : {}".format(TemplateError))
                 self.logger.info("Template : {}".format(self.stack_cfg["dynamic_name"]))
