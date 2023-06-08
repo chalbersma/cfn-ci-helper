@@ -150,6 +150,8 @@ if __name__ == "__main__":
     # Parse Live Add Options
     live_add = dict(parameters={})
 
+    logger.debug(args.parameters)
+
     for param in args.parameters:
 
         param_key, param_val = param.split(":", 1)
