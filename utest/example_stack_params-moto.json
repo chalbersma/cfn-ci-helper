@@ -1,0 +1,25 @@
+{
+    "Description": "Very simple Bucket Cloudformation Example for Testing\n",
+    "Parameters": {
+        "ThingA": {
+            "Description": "Sample Param",
+            "Type": "String"
+        },
+        "ThingB": {
+            "Description": "Sample Param",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "BasicParameter": {
+            "Type": "AWS::SSM::Parameter",
+            "Properties": {
+                "Name": {"Ref":  "ThingA"},
+                "Type": "String",
+                "Value": {"Ref":  "ThingB"},
+                "Description": "SSM Parameter With Test Data",
+                "AllowedPattern": "^[a-zA-Z]{1,10}$"
+            }
+        }
+    }
+}

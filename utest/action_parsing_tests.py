@@ -114,3 +114,28 @@ class BasicActionTuple(unittest.TestCase):
         #self.logger.debug(action_obj.action_stacks)
 
         self.assertGreater(len(action_obj.action_stacks), 30, "Should be many regions and many stacks")
+
+    @moto.mock_aws
+    def test_dynamic_params(self):
+        """
+        for Each item in _abrn Run it
+        """
+
+        action_obj = cfnStack.ActionParser(
+            only_profiles=[],
+            stackname=[],
+            category=None,
+            config=None,
+            stack="utest/example_stack_params.yaml",
+            # description=args.description,
+            regions=["us-east-1"],
+            capabilities=[],
+            dynamic_tags=[],
+            parameters=["ThingA:valuea", {"Key": "ThingB", "Value": "valueb"}],
+            profiles=["default"],
+            delete=False,
+        )
+
+        self.logger.debug("Action Stacks Params Test {}".format(action_obj.live_add))
+
+        self.assertEqual(len(action_obj.live_add["parameters"].keys()), 2, "Should be Two Parameters")

@@ -5,7 +5,7 @@ Resources:
   BasicParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: cfncihelper/test
+      Name: /cfncihelper/test
       Type: String
       Value: test
       Description: SSM Parameter With Test Data

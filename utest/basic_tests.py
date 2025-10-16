@@ -30,32 +30,123 @@ class BasicCFNStack(unittest.TestCase):
                                         tags=["test:value"],
                                         regions=["us-east-1"],
                                         profile="default")
+        self.action_stack_args = dict(
+            only_profiles=[],
+            stackname=[],
+            category=None,
+            config=None,
+            ## Moto's Parser doesn't handle yaml files so the test files all
+            ## Need to not use CF Expansions (!Ref, !Sub, etc...) or it needs
+            ## to be JSON formatted.
+            stack="utest/example_stack_params-moto.json",
+            # description=args.description,
+            regions=["us-east-1"],
+            capabilities=[],
+            dynamic_tags=[],
+            parameters=["ThingA:a", "ThingB:b"],
+            profiles=["default"],
+            delete=False)
+
+        self.default_action_obj = cfnStack.ActionParser(
+            **self.action_stack_args
+        )
 
 
         self.logger = logging.getLogger("TestBackForth")
 
     @moto.mock_aws
-    def test_obj(self):
+    def test_obj_no_confirm(self):
         """
         for Each item in _abrn Run it
         """
 
-        with importlib.resources.path(cfnStack, "default_stack.yaml.jinja") as stack_template_path:
-            with open(stack_template_path, "r") as stack_template_fobj:
-                stack_template_str = stack_template_fobj.read()
+        should_break = False
 
-                config_template = jinja2.Environment(loader=jinja2.BaseLoader,
-                                                     autoescape=jinja2.select_autoescape(
-                                                         enabled_extensions=('html', 'xml'),
-                                                         default_for_string=False
-                                                     )).from_string(stack_template_str)
+        this_result = cfnStack.ProcessStack(
+            self.default_action_obj.action_stacks[0],
+            confirm=False,
+            live_add=self.default_action_obj.live_add
+        )
 
-                config_rendered = config_template.render(**self.default_render_data)
+        if this_result.return_status["fail"] is True:
+            should_break = True
 
-                self.logger.debug("Live Rendered: {}".format(config_rendered))
+        result_row = this_result.return_table_row()
 
-                category_configs = yaml.safe_load(config_rendered)
+        self.assertEqual(len(result_row), 8, "Table Results too Short")
+        self.assertFalse(result_row[-1], "Confirm is off f_triggered should be False")
+        self.assertEqual(result_row[-2], "CONFIRM OFF", "Confirm is Off, result should respoect that")
+        self.assertFalse(should_break, "This Shouldn't have Triggered a Break")
 
-                self.logger.debug("configs: {}".format(category_configs))
 
-        self.assertEqual(1, 1, "Test")
+
+    @moto.mock_aws
+    def test_obj_confirm(self):
+        """
+        for Each item in _abrn Run it
+        """
+
+        should_break = False
+
+        this_result = cfnStack.ProcessStack(
+            self.default_action_obj.action_stacks[0],
+            confirm=True,
+            live_add=self.default_action_obj.live_add
+        )
+
+        if this_result.return_status["fail"] is True:
+            should_break = True
+
+        result_row = this_result.return_table_row()
+
+        self.assertEqual(len(result_row), 8, "Table Results too Short")
+        self.assertFalse(result_row[-1], "Confirm is on f_triggered should be False")
+        self.assertEqual(result_row[-2], "UPDATE SUCCESS", "Confirm is Off, result should respoect that")
+
+
+    @moto.mock_aws
+    def test_stack_delete(self):
+        """
+        for Each item in _abrn Run it
+        """
+
+        should_break = False
+
+        this_result = cfnStack.ProcessStack(
+            self.default_action_obj.action_stacks[0],
+            confirm=True,
+            live_add=self.default_action_obj.live_add
+        )
+
+        if this_result.return_status["fail"] is True:
+            should_break = True
+
+        delete_action_stack_args = self.action_stack_args
+
+        delete_action_stack_args["delete"] = True
+
+        delete_action_obj = cfnStack.ActionParser(
+            **delete_action_stack_args
+        )
+
+        should_break = False
+
+        this_result = cfnStack.ProcessStack(
+            delete_action_obj.action_stacks[0],
+            confirm=True,
+            live_add=delete_action_obj.live_add
+        )
+
+        if this_result.return_status["fail"] is True:
+            should_break = True
+
+        result_row = this_result.return_table_row()
+
+        self.assertEqual(len(result_row), 8, "Table Results too Short")
+        self.assertFalse(result_row[-1], "Confirm is on f_triggered should be False")
+        self.assertEqual(result_row[-2], "Deleted", "Confirm is Off, result should respoect that")
+
+
+
+
+
