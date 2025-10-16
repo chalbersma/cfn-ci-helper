@@ -1,0 +1,4 @@
+[run]
+omit =
+    utest/*.py
+    run_tests.py

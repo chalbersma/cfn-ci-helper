@@ -22,9 +22,13 @@ import cfnStack
 _region = "us-west-2"
 _timeout = 180
 
-if __name__ == "__main__":
+def get_argparse() -> argparse.ArgumentParser:
+    """
+    Allows the use of Documentation Tools for Argparse
 
-    # Let's grab my runtime options
+    :return: args
+    :rtype: argparse.Namespace
+    """
 
     parser = argparse.ArgumentParser()
 
@@ -58,6 +62,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    return args
+
+if __name__ == "__main__":
+
+    args = get_argparse()
+
     VERBOSE = len(args.verbose)
 
     EXTRA_MODULES = ["boto3", "urllib3", "botocore",
@@ -85,166 +95,39 @@ if __name__ == "__main__":
 
     logger = logging.getLogger("deploy_cf")
 
-    if args.category is not None:
-        if os.path.isdir(args.category) is False:
-            logger.error("Unable to Find Cateogry Directory : {}".format(args.category))
-            sys.exit(1)
-        else:
-            logger.debug("Working in Category: {}".format(args.category))
-            config_file = os.path.join(args.category, "config.yaml")
+    action_obj = cfnStack.ActionParser(
+        only_profiles = args.only_profiles,
+        stackname = args.stackname,
+        category = args.category,
+        config = args.config,
+        stack = args.stack,
+        description = args.description,
+        regions = args.regions,
+        capabilities = args.capabilities,
+        dynamic_tags = args.tags,
+        parameters = args.parameters,
+        profiles = args.profiles,
+        delete = args.stackdelete
+    )
 
-        with open(config_file) as config_fobj:
-            category_configs = yaml.safe_load(config_fobj)
+    logger.debug("Requested Stack/Profile with New Object. \n{}".format(json.dumps(action_obj.action_stacks, indent=2)))
 
-    elif args.config is not None:
-        if os.path.isfile(args.config) is False:
-            logger.error("Unable to Find Configuration File : {}".format(args.category))
-            sys.exit(1)
-        else:
-            logger.debug("Categories not in Usein a direct yaml config : {}.".format(args.config))
-            config_file = args.config
-
-        with open(config_file) as config_fobj:
-            category_configs = yaml.safe_load(config_fobj)
-
-    elif args.stack is not None:
-        if os.path.isfile(args.stack) is False:
-            logger.error("Cannot Find Direct Stack Configuration : {}".format(args.stack))
-        else:
-            logger.debug("Using default configuration for direct stack.")
-
-            render_data = dict(filename=args.stack,
-                               description=args.description,
-                               capabilities=args.capabilities,
-                               parameters=args.parameters,
-                               tags=args.tags)
-
-            if len(args.profiles) == 0:
-                render_data["profiles"] = ["default"]
-            else:
-                render_data["profiles"] = args.profiles
-
-            if len(args.regions) == 0:
-                render_data["regions"] = [_region]
-            else:
-                render_data["regions"] = args.regions
-
-            with importlib.resources.path(cfnStack, "default_stack.yaml.jinja") as stack_template_path:
-                with open(stack_template_path, "r") as stack_template_fobj:
-                    stack_template_str = stack_template_fobj.read()
-
-                    config_template = jinja2.Environment(loader=jinja2.BaseLoader,
-                                                         autoescape=jinja2.select_autoescape(
-                                                             enabled_extensions=('html', 'xml'),
-                                                             default_for_string=False
-                                                         )).from_string(stack_template_str)
-
-                    config_rendered = config_template.render(**render_data)
-
-                    logger.debug("Live Rendered: {}".format(config_rendered))
-
-                    category_configs = yaml.safe_load(config_rendered)
-
-                    logger.debug("configs: {}".format(category_configs))
-
-    # Parse Live Add Options
-    live_add = dict(parameters={})
-
-    logger.debug(args.parameters)
-
-    for param in args.parameters:
-
-        param_key, param_val = param.split(":", 1)
-        logger.debug("Adding Parameter {}".format(param_key))
-        live_add["parameters"][param_key] = param_val
-
-
-    wanted_stacks = list()
-    if len(args.stackname) == 0:
-        # Take All Stacks
-        wanted_stacks = list(category_configs.keys())
-    else:
-        wanted_stacks = [stack for stack in args.stackname if stack in category_configs.keys()]
-
-        missing_stacks = [mstack for mstack in args.stackname if mstack not in category_configs.keys()]
-
-        if len(missing_stacks) > 0:
-            logger.error(
-                "Requested Stack(s) {} not requested configured in category {}".format(",".join(missing_stacks),
-                                                                                       args.category))
-            logger.debug("Exiting early.")
-            sys.exit(2)
-
-    action_tuples = list()
-
-    for wstack in wanted_stacks:
-
-        this_config = category_configs[wstack]
-
-        this_config_file = os.path.join(args.category, this_config["file"])
-
-        with open(this_config_file, "r") as stack_config_file_obj:
-            stack_config_json = stack_config_file_obj.read()
-
-        if len(args.only_profiles) == 0:
-            # Take all Configured Profiles
-            wprofiles = category_configs[wstack]["profiles"]
-
-        else:
-            wprofiles = [prof for prof in args.only_profiles if prof in category_configs[wstack]["profiles"]]
-
-            mprofiles = [prof for prof in args.only_profiles if prof not in category_configs[wstack]["profiles"]]
-
-            if len(mprofiles) > 0:
-                logger.error("{} missing requested profiles {}.".format(wstack,
-                                                                        ",".join(
-                                                                            mprofiles)))
-                sys.exit(3)
-
-        wregions = this_config.get("regions", [_region])
-
-        if isinstance(wregions, str) and wregions.startswith("all"):
-            wregions = [wregions]
-
-        for wprofile in wprofiles:
-
-            this_wregions = wregions
-
-            if len(wregions) == 1 and wregions[0].startswith("all"):
-                # Get and Wrap All Regions
-                fast_service_name="cloudformation"
-
-                if ":" in wregions[0]:
-                    fast_service_name = wregions[0].split(":")[1]
-
-                logger.warning("Deployment requested to all regions for service: {}".format(fast_service_name))
-                fast_session = aws_session = boto3.session.Session(profile_name=wprofile)
-                this_wregions = fast_session.get_available_regions(service_name=fast_service_name)
-                logger.info("Expanding to {} regions for profile {}".format(len(this_wregions), wprofile))
-                logger.debug("Wanted Regions for Profile {}, {}".format(wprofile, ", ".join(this_wregions)))
-            # else
-                # I can use the list of regions
-
-            for wregion in this_wregions:
-                action_tuples.append({"stack": wstack,
-                                      "stack_cfg": this_config,
-                                      "region": wregion,
-                                      "profile": wprofile,
-                                      "stack_config_json": stack_config_json,
-                                      "delete": args.stackdelete})
-
-    logger.info("Requesting Modifications for {} Stacks/Profile Combinations".format(len(action_tuples)))
-    # logger.debug("Requested Stack/Profile Combinations.\n{}".format(json.dumps(action_tuples, indent=2)))
 
     result_table = texttable.Texttable(max_width=160)
     result_table.add_row(["stack", "profile", "region", "aws", "stack_valid", "changes", "action", "f_triggered"])
 
     should_break = False
 
-    for action_tuple in action_tuples:
+    if len(action_obj.errors.keys()) > 0:
+        logger.error("Parsing Error() on Action Obj.")
+        logger.debug("Errors: {}".format(json.dumps(action_obj.errors, indent=2)))
+
+        sys.exit(1)
+
+    for action_tuple in action_obj.action_stacks:
         this_result = cfnStack.ProcessStack(action_tuple,
                                             confirm=args.confirm,
-                                            live_add=live_add)
+                                            live_add=action_obj.live_add)
 
         if this_result.return_status["fail"] is True:
             should_break = True

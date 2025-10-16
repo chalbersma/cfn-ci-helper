@@ -1,0 +1,14 @@
+Description: |
+  Very simple Bucket Cloudformation Example for Testing SSM
+
+Resources:
+  BasicParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: cfncihelper/test
+      Type: String
+      Value: test
+      Description: SSM Parameter With Test Data
+      AllowedPattern: "^[a-zA-Z]{1,10}$"
+      Tags:
+        Environment: DEV

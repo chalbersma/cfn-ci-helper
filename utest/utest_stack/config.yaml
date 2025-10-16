@@ -1,0 +1,11 @@
+---
+ssm-0-test:
+  file: example_stack_ssm.yaml
+  description: Creates a SSM Parameter for Test
+  tags:
+    - Key: Test
+      Value: "true"
+  regions:
+    - us-east-1
+  profiles:
+    - unnamedsec
