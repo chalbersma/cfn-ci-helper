@@ -31,5 +31,8 @@ Entry Scripts
     :func: get_argparse
     :prog: run_tests.py
 
+Code Coverage
+**************
 
+* `Code Coverage Report <_static/coverage/index.html>`_
 

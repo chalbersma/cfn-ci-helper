@@ -1,6 +1,6 @@
 [project]
 name = "cfn-ci-helper"
-version = "2025.10.16-2"
+version = "2025.10.17-0"
 authors = [
     {name = "Chris Halbersma", email = "chris@halbersma.us" }
 ]
