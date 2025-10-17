@@ -60,13 +60,13 @@ def get_argparse() -> argparse.ArgumentParser:
     group.add_argument("-c", "--config", help="Specify a Configuration File to Deploy", default=None)
     group.add_argument("-S", "--stack", help="Specify a single Stack file deploy", default=None)
 
-    args = parser.parse_args()
-
-    return args
+    return parser
 
 if __name__ == "__main__":
 
-    args = get_argparse()
+    # Get my Arguments
+    parser = get_argparse()
+    args = parser.parse_args()
 
     VERBOSE = len(args.verbose)
 
